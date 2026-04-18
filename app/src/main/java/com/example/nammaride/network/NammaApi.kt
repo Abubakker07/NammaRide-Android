@@ -62,7 +62,7 @@ object RetrofitClient {
     // ✅ After Railway deployment: Settings → Networking → Generate Domain
     // Replace the URL below with your actual Railway domain
     // Example: "https://nammaride-backend-production.up.railway.app/"
-    private const val BASE_URL = "https://nammaride-backend-production.up.railway.app/"
+    private const val BASE_URL = "https://nammaride-free.alwaysdata.net/"
 
     val api: NammaRideApi by lazy {
         Retrofit.Builder()
