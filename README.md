@@ -42,7 +42,6 @@ Prioritizes user safety by monitoring the Android device's hardware acceleromete
 
 <div align="center">
   <img src="ss/screen1.png" width="19%" alt="Home Dashboard" />
-  <br>
   <img src="ss/screen2.png" width="19%" alt="OSRM Route Map" />
   <img src="ss/screen3.png" width="19%" alt="Fare Breakdown" />
   <img src="ss/screen4.png" width="19%" alt="AI QR Scam Alert" />
