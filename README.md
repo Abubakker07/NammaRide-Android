@@ -10,7 +10,7 @@
 ![AlwaysData](https://img.shields.io/badge/AlwaysData-FF0055?style=for-the-badge&logo=linux&logoColor=white)
 ![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 
-**NammaRide** is a native Android ride-hailing simulator engineered to tackle real-world transit challenges across major transit hubs in Bangalore. By aggregating and comparing ETAs and services from platforms like Uber, Ola, Rapido, and Namma Yatri, it delivers transparent fare breakdowns, dynamic pricing, and on-device fraud prevention.
+**NammaRide** is a native Android ride-hailing simulator engineered to tackle real-world transit challenges across major transit hubs in Bangalore.
 
 [Features](#-key-features) • [Architecture](#️-system-architecture--tech-stack) • [Gallery](#-app-gallery) • [Installation](#-local-development-setup) • [🔗 Backend Repository](https://github.com/Abubakker07/nammaride-backend)
 
@@ -86,3 +86,22 @@ Prioritizes user safety by monitoring the Android device's hardware acceleromete
 ```bash
 git clone [https://github.com/Abubakker07/NammaRide-Android.git](https://github.com/Abubakker07/NammaRide-Android.git)
 cd NammaRide-Android
+```
+### 2️⃣ Database Setup
+* Clone the [backend repository](https://github.com/Abubakker07/nammaride-backend).
+* Import the `nammaride_backup.sql` file into your local MySQL server (via XAMPP/MAMP or MySQL CLI).
+* Update the environment credentials in `backend/db.php`.
+
+### 3️⃣ Android Setup
+* Open the project in **Android Studio**.
+* Navigate to `com.example.nammaride.network.NammaApi.kt`.
+* Uncomment the local IP configuration in your environment switcher:
+  ```kotlin
+  // Uncomment for Local XAMPP Testing:
+  private const val BASE_URL = "[http://192.168.1.](http://192.168.1.)X/"
+  ```
+
+### 4️⃣ Run App
+* Connect a physical Android device (Recommended for GPS & Camera ML performance) or launch an emulator.
+* Sync Gradle and click Run.
+* Note: Ensure your backend server (XAMPP/Apache) and MySQL service are actively running before launching the app to prevent BEGIN_ARRAY Retrofit crash errors.
