@@ -743,7 +743,11 @@ fun LocationSelectionScreen(
                                                                 Toast.makeText(context, "Not a valid UPI QR Code.", Toast.LENGTH_SHORT).show()
                                                             }
                                                         }
-                                                        .addOnFailureListener { Toast.makeText(context, "Scan cancelled.", Toast.LENGTH_SHORT).show() }
+                                                        .addOnFailureListener { e ->
+                                                            // ✨ NEW ERROR CATCHER ✨
+                                                            Toast.makeText(context, "Failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                                            e.printStackTrace()
+                                                        }
                                                 },
                                                 modifier = Modifier.background(colors.input, CircleShape)
                                             ) {
@@ -878,6 +882,14 @@ fun OsmMapView(showRoute: Boolean, destLat: Double, destLng: Double) {
 
     LaunchedEffect(showRoute, destLat, destLng) {
         if (showRoute) {
+            // Clear the old line immediately
+            routePoints = emptyList()
+
+            // FIX 1: THE DEBOUNCE
+            // Wait 400ms to allow destLat, destLng, and showRoute to settle.
+            // This prevents the app from spamming the OSRM server and getting IP banned.
+            kotlinx.coroutines.delay(400)
+
             routePoints = withContext(Dispatchers.IO) {
                 try {
                     val isAirport = destLat in 13.19..13.20
@@ -890,24 +902,42 @@ fun OsmMapView(showRoute: Boolean, destLat: Double, destLng: Double) {
                         "${kristuJayanti.longitude},${kristuJayanti.latitude};${dynamicDestination.longitude},${dynamicDestination.latitude}"
                     }
 
-                    val url = "https://router.project-osrm.org/route/v1/driving/$coordinateString?overview=full&geometries=geojson"
+                    val urlString = "https://router.project-osrm.org/route/v1/driving/$coordinateString?overview=full&geometries=geojson"
 
-                    val json = JSONObject(java.net.URL(url).readText())
-                    val routes = json.getJSONArray("routes")
-                    if (routes.length() > 0) {
-                        val coordinates = routes.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates")
-                        val path = mutableListOf<GeoPoint>()
-                        for (i in 0 until coordinates.length()) {
-                            val coord = coordinates.getJSONArray(i)
-                            path.add(GeoPoint(coord.getDouble(1), coord.getDouble(0)))
-                        }
-                        path
-                    } else emptyList()
+                    // FIX 2: PROPER HTTP CONNECTION WITH USER-AGENT
+                    val url = java.net.URL(urlString)
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.setRequestProperty("User-Agent", "NammaRide/2.0 Android") // Crucial for OSRM public server
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+
+                    if (connection.responseCode == 200) {
+                        val response = connection.inputStream.bufferedReader().use { it.readText() }
+                        val json = JSONObject(response)
+                        val routes = json.getJSONArray("routes")
+
+                        if (routes.length() > 0) {
+                            val coordinates = routes.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates")
+                            val path = mutableListOf<GeoPoint>()
+                            for (i in 0 until coordinates.length()) {
+                                val coord = coordinates.getJSONArray(i)
+                                path.add(GeoPoint(coord.getDouble(1), coord.getDouble(0)))
+                            }
+                            path
+                        } else emptyList()
+                    } else {
+                        // FIX 3: EXPOSE THE ERROR
+                        android.util.Log.e("OsmMapView", "OSRM Rejected Request: HTTP ${connection.responseCode}")
+                        emptyList()
+                    }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    android.util.Log.e("OsmMapView", "Network/Parsing Exception: ${e.message}")
                     emptyList()
                 }
             }
+        } else {
+            routePoints = emptyList()
         }
     }
 
@@ -947,6 +977,8 @@ fun OsmMapView(showRoute: Boolean, destLat: Double, destLng: Double) {
                         outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
                         outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
                     })
+
+                    // Centers the camera to show the whole route
                     map.controller.animateTo(GeoPoint((kristuJayanti.latitude + dynamicDestination.latitude) / 2, (kristuJayanti.longitude + dynamicDestination.longitude) / 2))
                     map.controller.setZoom(11.5)
                 }
@@ -954,6 +986,8 @@ fun OsmMapView(showRoute: Boolean, destLat: Double, destLng: Double) {
                 map.controller.animateTo(kristuJayanti)
                 map.controller.setZoom(13.5)
             }
+
+            map.invalidate() // Forces the map to redraw immediately
         }
     )
 }
